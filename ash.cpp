@@ -439,10 +439,7 @@ int main(int argc, char **argv) {
 
   // ****INTERACTIVE MODE****
   case 1: {
-
-    // get shell id for interprocess messages
-    // cout << BOLD YELLOW << " shell id> " << DEFAULT;
-    // getline(cin, shid);
+    
     shid = getpid();
     inbox += to_string(shid);
     makeFifo();
