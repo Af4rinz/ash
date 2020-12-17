@@ -1,5 +1,5 @@
 /**************************************************
- * ash shell program                           *
+ * ash shell program                              *
  * Course: Operating Systems - Fall 2020          *
  * Date: 16/12/2020                               *
  *                                                *
@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -105,6 +106,10 @@ string strReplace(string str, string init, string fin) {
 
 // change directory
 void run_cd(vector<string> args) {
+  if (args.size() < 2) {
+    cout << RED BOLD << "Invalid arguments for cd." << DEFAULT << endl;
+    return;
+  }
   string dir = args[1];
   // invalid directory
   if (dir == "")
@@ -161,8 +166,8 @@ void run_help(vector<string> args) {
       cout << YELLOW << "Shows this help message.\n";
     }
 
-    else if (biItr->first == "quit") {
-      cout << GREEN BOLD << "\tquit\n" << DEFAULT;
+    else if (biItr->first == EXITSH) {
+      cout << GREEN BOLD << "\t" << EXITSH << "\n" << DEFAULT;
       cout << YELLOW << "Exits the shell with return code 0.\n";
     }
 
@@ -230,13 +235,14 @@ void run_pwd(vector<string> args) {
   return;
 }
 // print terminal prompt
-void prompt() {
+string prompt() {
   string result = strReplace(currDir, homeDir, "~");
 
   if (result == "~") {
     result = "~/";
   }
-  cout << BOLD BLUE WHITEBG REVERSE << " " << result << PMPT DEFAULT << " ";
+  string str = " " + result + PMPT DEFAULT + " ";
+  return str;
 }
 
 // make fifo (named pipe) for inbox
@@ -418,7 +424,7 @@ int main(int argc, char **argv) {
   biCmd["receive"] = &receive;
   biCmd["cd"] = &run_cd;
   biCmd["help"] = &run_help;
-  biCmd["exit"] = &run_exit;
+  biCmd[EXITSH] = &run_exit;
   biCmd["clear"] = &run_clear;
   biCmd["history"] = &run_history;
   biCmd["pwd"] = &run_pwd;
@@ -458,17 +464,19 @@ int main(int argc, char **argv) {
       bool isBi = false;
 
       // print prompt
-      prompt();
+      // prompt();
+      cout << BOLD BLUE WHITEBG REVERSE;
       // c string for basic processing
-      input = readline("");
+      input = readline(prompt().c_str());
+      // ctrl+D handler
+      if (input == NULL) {
+        thrd.detach();
+        cout << BLUE << "leaving..." << DEFAULT << endl;
+        break;
+      }
       // cpp string for its own functions
       sinput = input;
       // skip line if empty
-      if (input == NULL || sinput == EXITSH) {
-        cout << BLUE << "leaving..." << DEFAULT << endl;
-        // break;
-        exit(0);
-      }
       sinput = regex_replace(sinput, regex("^ +| +$|( ) +"), "$1");
       if (sinput == "" || stop) {
         stop = false;
@@ -496,8 +504,7 @@ int main(int argc, char **argv) {
           if (isPipe) {
             pipedResFd = execute(procIn[i], isPipe, pipedResFd);
 
-            // do for the last pipe, if they exist
-            if (i==procIn.size()-1 && i != 0) {
+            if (i==procIn.size()-1) {
 
               char buffer[BUFFER_SIZE];
               int resFread;
@@ -517,7 +524,8 @@ int main(int argc, char **argv) {
   case 2: {
     if (fork() == 0) {
       ifstream batchFile(argv[1]);
-      cout << CYAN REVERSE << "\t\topened " << argv[1] << " in batch mode" << DEFAULT << endl;
+      cout << CYAN REVERSE << "\t\t  opened " << argv[1] << " in batch mode  " << DEFAULT << endl;
+      // read lines from file
       while (getline(batchFile, sinput)) {
         vector<vector<string>> procIn;
 
@@ -530,10 +538,6 @@ int main(int argc, char **argv) {
           continue;
         }
         cout << YELLOW BOLD << sinput << DEFAULT << endl;
-        if (sinput == EXITSH) {
-          cout << RED BOLD << "leaving..." << DEFAULT << endl;
-          break;
-        }
 
         parse(sinput, procIn);
 
