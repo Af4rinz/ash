@@ -1,2 +1,5 @@
+PROGRAM = ash
+FLAGS = -w -lreadline -pthread -o $(PROGRAM)
+CC = g++
 build:
-	g++ ash.cpp -lreadline -pthread -o ash
+	$(CC) $(PROGRAM).cpp $(FLAGS)
